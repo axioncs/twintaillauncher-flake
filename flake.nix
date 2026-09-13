@@ -76,22 +76,15 @@
 
             install -Dm755 usr/bin/twintaillauncher -t "$out/bin"
 
-            # Resource files vary by upstream release; install whatever
-            # executables/data files are actually present rather than
-            # hardcoding a fixed list that can go stale.
             mkdir -p "$out/lib/twintaillauncher/resources"
             for f in usr/lib/twintaillauncher/resources/*; do
+              [ -e "$f" ] || continue
               [ -f "$f" ] || continue
-              case "$f" in
-                */locales) ;; # handled separately below
-                *)
-                  if [ -x "$f" ]; then
-                    install -Dm755 "$f" "$out/lib/twintaillauncher/resources/$(basename "$f")"
-                  else
-                    install -Dm644 "$f" "$out/lib/twintaillauncher/resources/$(basename "$f")"
-                  fi
-                  ;;
-              esac
+              if [ -x "$f" ]; then
+                install -Dm755 "$f" "$out/lib/twintaillauncher/resources/$(basename "$f")"
+              else
+                install -Dm644 "$f" "$out/lib/twintaillauncher/resources/$(basename "$f")"
+              fi
             done
 
             if [ -d usr/lib/twintaillauncher/resources/locales ]; then
@@ -114,17 +107,6 @@
             fi
 
             runHook postInstall
-          '';
-
-          postFixup = ''
-            mv $out/bin/twintaillauncher $out/bin/.twintaillauncher-launcher
-            cat > $out/bin/twintaillauncher << 'WRAPPER'
-#!/bin/sh
-data="''${XDG_DATA_HOME:-$HOME/.local/share}/twintaillauncher"
-chmod -f u+w "$data/hpatchz" "$data/hpatchz.exe" 2>/dev/null || true
-exec "$(dirname "$0")/.twintaillauncher-launcher" "$@"
-WRAPPER
-            chmod +x $out/bin/twintaillauncher
           '';
 
           meta = {
@@ -161,6 +143,7 @@ WRAPPER
             ln -s ${unwrapped}/share/applications $out/share/applications 2>/dev/null || true
             ln -s ${unwrapped}/share/icons $out/share/icons 2>/dev/null || true
           '';
+
           meta = unwrapped.meta;
         };
       }
