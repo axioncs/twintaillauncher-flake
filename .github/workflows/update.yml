@@ -1,0 +1,59 @@
+name: Check for TwintailLauncher updates
+
+on:
+  schedule:
+    # Daily at 09:00 UTC
+    - cron: "0 9 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Run update script
+        id: update
+        run: |
+          set -e
+          before=$(jq -r '.version' version.json)
+          ./update.sh
+          after=$(jq -r '.version' version.json)
+          if [ "$before" = "$after" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "new_version=$after" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify build (x86_64-linux)
+        if: steps.update.outputs.changed == 'true'
+        run: nix build .#default --print-build-logs
+
+      - name: Create Pull Request
+        if: steps.update.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore: bump TwintailLauncher to v${{ steps.update.outputs.new_version }}"
+          title: "Update TwintailLauncher to v${{ steps.update.outputs.new_version }}"
+          body: |
+            Automated update, triggered by the daily upstream release check.
+
+            - New version: `${{ steps.update.outputs.new_version }}`
+            - Build verified on `x86_64-linux` before opening this PR.
+
+            Please confirm on `aarch64-linux` if you rely on that platform, since CI only builds x86_64 by default.
+          branch: auto-update/twintaillauncher
+          delete-branch: true
