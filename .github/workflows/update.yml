@@ -2,8 +2,8 @@ name: Check for TwintailLauncher updates
 
 on:
   schedule:
-    # Daily at 09:00 UTC
-    - cron: "0 9 * * *"
+    # Every 6 hours
+    - cron: "0 */6 * * *"
   workflow_dispatch: {}
 
 permissions:
