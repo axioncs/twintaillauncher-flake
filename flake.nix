@@ -76,10 +76,28 @@
 
             install -Dm755 usr/bin/twintaillauncher -t "$out/bin"
 
-            install -Dm755 usr/lib/twintaillauncher/resources/hpatchz -t "$out/lib/twintaillauncher/resources"
-            install -Dm755 usr/lib/twintaillauncher/resources/reaper -t "$out/lib/twintaillauncher/resources"
-            if [ -f usr/lib/twintaillauncher/resources/hkrpg_patch.dll ]; then
-              install -Dm644 usr/lib/twintaillauncher/resources/hkrpg_patch.dll -t "$out/lib/twintaillauncher/resources"
+            # Resource files vary by upstream release; install whatever
+            # executables/data files are actually present rather than
+            # hardcoding a fixed list that can go stale.
+            mkdir -p "$out/lib/twintaillauncher/resources"
+            for f in usr/lib/twintaillauncher/resources/*; do
+              [ -f "$f" ] || continue
+              case "$f" in
+                */locales) ;; # handled separately below
+                *)
+                  if [ -x "$f" ]; then
+                    install -Dm755 "$f" "$out/lib/twintaillauncher/resources/$(basename "$f")"
+                  else
+                    install -Dm644 "$f" "$out/lib/twintaillauncher/resources/$(basename "$f")"
+                  fi
+                  ;;
+              esac
+            done
+
+            if [ -d usr/lib/twintaillauncher/resources/locales ]; then
+              mkdir -p "$out/lib/twintaillauncher/resources/locales"
+              install -Dm644 usr/lib/twintaillauncher/resources/locales/*.json \
+                -t "$out/lib/twintaillauncher/resources/locales"
             fi
 
             install -Dm644 usr/share/applications/twintaillauncher.desktop -t "$out/share/applications"
