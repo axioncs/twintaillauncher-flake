@@ -15,7 +15,7 @@ Add as a flake input:
 Then reference the package, e.g. in `home.packages`:
 
 ```nix
-home.packages = [ inputs.twintaillauncher.packages.${system}.default ];
+home.packages = [ inputs.twintaillauncher.packages.${pkgs.stdenv.hostPlatform.system}.default ];
 ```
 
 Or run it directly without installing:
