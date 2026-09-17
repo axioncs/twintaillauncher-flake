@@ -13,6 +13,7 @@ REPO="TwintailTeam/TwintailLauncher"
 FILE="version.json"
 
 current_version=$(jq -r '.version' "$FILE")
+current_amd64_hash=$(jq -r '.hashes.amd64' "$FILE")
 
 latest_tag=$(curl -fsSL \
   -H "Accept: application/vnd.github+json" \
@@ -27,7 +28,7 @@ if [ -z "$latest_version" ] || [ "$latest_version" = "null" ]; then
   exit 1
 fi
 
-if [ "$latest_version" = "$current_version" ]; then
+if [ "$latest_version" = "$current_version" ] && [[ "$current_amd64_hash" != *"0000000000"* ]]; then
   echo "Already up to date ($current_version)."
   exit 0
 fi
