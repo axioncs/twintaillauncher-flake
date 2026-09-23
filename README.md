@@ -8,7 +8,10 @@ Add as a flake input:
 
 ```nix
 {
-  inputs.twintaillauncher.url = "github:axioncs/twintaillauncher-flake";
+  inputs.twintaillauncher = {
+    url = "github:axioncs/twintaillauncher-flake";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
 }
 ```
 
