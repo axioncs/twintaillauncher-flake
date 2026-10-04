@@ -50,6 +50,30 @@
           unset GIO_EXTRA_MODULES
           unset BASH_ENV
         '';
+        # Plain dash on purpose
+        sparkleEntrypoint = pkgs.writeScript "twintaillauncher-entrypoint" ''
+          #!${pkgs.dash}/bin/dash
+          set -u
+          fix_sparkle_permissions() {
+            [ -n "''${HOME:-}" ] || return 0
+            db="''${XDG_DATA_HOME:-$HOME/.local/share}/twintaillauncher/storage.db"
+            [ -r "$db" ] || return 0
+            ${pkgs.sqlite}/bin/sqlite3 -batch -noheader "$db" \
+              "SELECT directory FROM install WHERE directory IS NOT NULL AND length(directory) > 0;" 2>/dev/null |
+            while IFS= read -r directory; do
+              [ -n "$directory" ] || continue
+              target="$directory/jsproxy.dll"
+              if [ -e "$target" ] && [ ! -w "$target" ]; then
+                ${pkgs.coreutils}/bin/chmod u+w -- "$target" || true
+              fi
+            done
+          }
+          fix_sparkle_permissions
+          status=0
+          ${unwrapped}/bin/twintaillauncher "$@" || status=$?
+          fix_sparkle_permissions
+          exit "$status"
+        '';
 
         unwrapped = pkgs.stdenv.mkDerivation {
           pname = "twintaillauncher-bin";
@@ -137,7 +161,7 @@
             export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
             export BASH_ENV=${bashEnvScript}
           '';
-          runScript = "${unwrapped}/bin/twintaillauncher";
+          runScript = "${sparkleEntrypoint}";
           extraInstallCommands = ''
             mkdir -p $out/share
             ln -s ${unwrapped}/share/applications $out/share/applications 2>/dev/null || true
