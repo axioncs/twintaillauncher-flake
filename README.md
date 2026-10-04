@@ -21,16 +21,16 @@ Then reference the package, e.g. in `home.packages`:
 home.packages = [ inputs.twintaillauncher.packages.${pkgs.stdenv.hostPlatform.system}.default ];
 ```
 
-Or run it directly without installing:
+Or run it directly without installing (uses your system's nixpkgs):
 
 ```bash
-nix run github:axioncs/twintaillauncher-flake
+nix run github:axioncs/twintaillauncher-flake --override-input nixpkgs flake:nixpkgs
 ```
 
 Or build it locally:
 
 ```bash
-nix build github:axioncs/twintaillauncher-flake
+nix build github:axioncs/twintaillauncher-flake --override-input nixpkgs flake:nixpkgs
 ./result/bin/twintaillauncher
 ```
 
@@ -38,6 +38,14 @@ nix build github:axioncs/twintaillauncher-flake
 
 - `x86_64-linux`
 - `aarch64-linux`
+
+## Known issues
+
+### Pressing Play twice in one session can crash the launcher
+
+The launcher copies `hkrpg_patch.dll` out of the read-only Nix store to the game's `jsproxy.dll`. The copy inherits the read-only mode, so the next copy fails with `PermissionDenied`.
+
+This flake wraps the launcher in an entrypoint that makes every install's `jsproxy.dll` writable before and after the launcher process runs, which fixes it between sessions. A second Play within the same launcher session can still hit the panic; restart the launcher and it works.
 
 ## License
 
